@@ -1,0 +1,5 @@
+<library path="cohan_layers_core">
+  <class name="cohan_layers/HumanLayer" type="cohan_layers::HumanLayer" base_class_type="nav2_costmap_2d::Layer">
+    <description>Avoid human basically</description>
+  </class>
+</library>
