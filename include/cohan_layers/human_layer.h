@@ -4,6 +4,10 @@
 #include "rclcpp/rclcpp.hpp"
 #include "nav2_costmap_2d/layer.hpp"
 #include "nav2_costmap_2d/layered_costmap.hpp"
+#include "geometry_msgs/msg/pose_array.hpp"
+#include "geometry_msgs/msg/pose.hpp"
+#include "geometry_msgs/msg/twist.hpp"
+#include "builtin_interfaces/msg/time.hpp"
 
 namespace cohan_layers
 {
@@ -31,6 +35,23 @@ class HumanLayer : public nav2_costmap_2d::Layer
   virtual void onFootprintChanged();
   
   virtual bool isClearable() {return false;}
+
+  void agentsCB(const geometry_msgs::msg::PoseArray& agents);
+
+protected:
+  struct AgentPoseVel{
+    std_msgs::msg::Header header;
+    geometry_msgs::msg::Pose pose;
+    geometry_msgs::msg::Twist velocity;
+  };
+
+  std::vector<AgentPoseVel> transformed_agents_;
+
+  bool first_time_, /*reset,*/ shutdown_;
+  rclcpp::Time last_time;
+  geometry_msgs::msg::PoseArray agents_;
+  double radius_, amplitude_, covar_, cutoff_;
+  double robot_radius = 0.46, human_radius=0.31;
 
 private:
   double last_min_x_, last_min_y_, last_max_x_, last_max_y_;

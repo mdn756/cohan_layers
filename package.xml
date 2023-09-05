@@ -16,6 +16,7 @@
   <depend>pluginlib</depend>
   <depend>rclcpp</depend>
   <depend>cohan_msgs</depend>
+  <depend>geometry_msgs</depend>
 
   <export>
     <costmap_2d plugin="${prefix}/human_layer.xml" />

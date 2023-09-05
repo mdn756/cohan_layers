@@ -5,6 +5,8 @@
 #include "rclcpp/parameter_events_filter.hpp"
 // what are these includes?
 
+#define TRACKED_AGENT_SUB "/tracked_agents"
+
 using nav2_costmap_2d::LETHAL_OBSTACLE;
 using nav2_costmap_2d::INSCRIBED_INFLATED_OBSTACLE;
 using nav2_costmap_2d::NO_INFORMATION;
@@ -27,6 +29,12 @@ void HumanLayer::onInitialize()
 
   need_recalculation_ = false;
   current_ = true;
+}
+
+void HumanLayer::agentsCB(const geometry_msgs::msg::PoseArray& agents)
+{
+  //boost::recursive_mutex::scoped_lock lock(lock_);
+  agents_ = agents;
 }
 
 void HumanLayer::updateBounds(

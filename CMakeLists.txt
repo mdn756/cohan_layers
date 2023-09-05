@@ -22,13 +22,13 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(nav2_costmap_2d REQUIRED)
 find_package(pluginlib REQUIRED)
-#find_package(geometry_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(cohan_msgs REQUIRED)
 
 set(dep_pkgs
     rclcpp
     nav2_costmap_2d
-#    geometry_msgs
+    geometry_msgs
     cohan_msgs
     pluginlib)
 
