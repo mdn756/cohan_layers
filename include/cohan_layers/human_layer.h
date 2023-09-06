@@ -56,6 +56,9 @@ protected:
 private:
   double last_min_x_, last_min_y_, last_max_x_, last_max_y_;
   bool need_recalculation_;
+  
+  rclcpp::Subscription<geometry_msgs::msg::PoseArray>::SharedPtr agent_sub;
+
   int GRADIENT_SIZE = 20;
   int GRADIENT_FACTOR = 10;
 };
