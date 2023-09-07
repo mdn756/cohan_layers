@@ -29,39 +29,21 @@ void HumanLayer::onInitialize()
     throw std::runtime_error{"Failed to lock node"};
   }
   
-  std::string topics_string; //topics that we subscribe to. 
-
   declareParameter("enabled", rclcpp::ParameterValue(true));
-  //declareParameter("observation_sources", rclcpp::ParameterValue(std::string("")));
 
   node->get_parameter(name_ + "." + "enabled", enabled_); //get and set
-  //node->get_parameter(name_ + "." + "observation_sources", topics_string);
-
-  //std::string topic;
-
-  //declareParameter(topics_string + "." + "topic", rclcpp::ParameterValue(topics_string));
-  //node->get_parameter(name_ + "." + topics_string + "." + "topic", topic);
 
   auto sub_opt = rclcpp::SubscriptionOptions();
   sub_opt.callback_group = callback_group_;
 
-  //rmw_qos_profile_t custom_qos_profile = rmw_qos_profile_sensor_data;
-  //custom_qos_profile.depth = 50; //what is this
-  
-  //auto sub = std::make_shared<rclcpp::Subscription<geometry_msgs::msg::PoseArray>>(node, topic, custom_qos_profile, sub_opt);
-  //sub->unsubscribe();
-  //sub->registerCallback(std::bind(&HumanLayer::agentsCB, this, std::placeholders::_1));
-  //observation_subscribers_.push_back(sub);
-
-  agent_sub = node->create_subscription<geometry_msgs::msg::PoseArray>("/agents", 10, std::bind(&HumanLayer::agentsCB, this, std::placeholders::_1), sub_opt); //change 10
+  agent_sub = node->create_subscription<cohan_msgs::msg::DynamicAgents>("/agents", 10, std::bind(&HumanLayer::agentsCB, this, std::placeholders::_1), sub_opt); //change 10
 
   need_recalculation_ = false;
   current_ = true;
-  //RCLCPP_DEBUG_STREAM(node->get_logger(), "My log message " << 4); this DEBUG thing makes the whole costmap fail. Why?????
   
 }
 
-void HumanLayer::agentsCB(const geometry_msgs::msg::PoseArray& agents)
+void HumanLayer::agentsCB(const cohan_msgs::msg::DynamicAgents& agents)
 {
   //boost::recursive_mutex::scoped_lock lock(lock_);
   agents_ = agents;
@@ -206,59 +188,7 @@ void HumanLayer::updateCosts(
     
   }
   else{
-  
-    /*int center_x = (max_i - min_i)/2 + min_i;
-    int center_y = (max_j - min_j)/2 + min_j;
-    double radius = (max_i - min_i)/3;
-    for (int j = min_j; j < max_j; j++) {
-      // Reset gradient_index each time when reaching the end of re-calculated window
-      // by OY axis.
-      for (int i = min_i; i < max_i; i++) {
-        //factor 0-1 and based on distance, else 0
-        int dx = (i-center_x);
-        int dy = (j-center_y);
-        double distance = sqrt(dx*dx + dy*dy);
-
-        int index = master_grid.getIndex(i, j);
-      
-        //unsigned char cost = (LETHAL_OBSTACLE - gradient_index*GRADIENT_FACTOR)%255;
-        unsigned char cost = 0;
-        if (distance < radius)
-        {
-          int factor = (LETHAL_OBSTACLE*(1-distance/radius));
-          cost = factor%255;
-        }
-        else 
-        {
-          cost = 0;
-        }
-        master_array[index] = cost;
-      }
-    }
-  
-    for (int j = min_j; j < max_j; j++) {
-      for (int i = min_i; i < max_i; i++) {
-        //factor 0-1 and based on distance, else 0
-        int dx = (i-center_x);
-        int dy = (j-center_y);
-        double distance = sqrt(dx*dx + dy*dy);
-
-        int index = master_grid.getIndex(i, j);
-      
-        unsigned char cost = 0;
-        if (!agents_.poses.empty())
-        {
-          int factor = (LETHAL_OBSTACLE*(1-distance/radius));
-          cost = factor%255;
-          cost = 150;
-        }
-        else 
-        {
-          cost = 40;
-        }
-        master_array[index] = cost;
-      }
-    }*/
+  //do nothing 
   }
   }
 
