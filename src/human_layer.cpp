@@ -20,6 +20,7 @@ HumanLayer::HumanLayer()
   last_max_x_(std::numeric_limits<float>::max()),
   last_max_y_(std::numeric_limits<float>::max())
 {
+  layered_costmap_ = NULL;
 }
 void HumanLayer::onInitialize()
 {
@@ -64,16 +65,14 @@ void HumanLayer::agentsCB(const geometry_msgs::msg::PoseArray& agents)
 {
   //boost::recursive_mutex::scoped_lock lock(lock_);
   agents_ = agents;
-  RCLCPP_DEBUG(
-      logger_,
-      "agent recieved");
-  std::cout<< "AGENT RECIEVED\n";
 }
 
 void HumanLayer::updateBounds(
   double /*robot_x*/, double /*robot_y*/, double /*robot_yaw*/, double * min_x,
   double * min_y, double * max_x, double * max_y)
 {
+  //std::string global_frame = layered_costmap_->getGlobalFrameID();
+
   if (need_recalculation_) {
     last_min_x_ = *min_x;
     last_min_y_ = *min_y;
@@ -144,60 +143,124 @@ void HumanLayer::updateCosts(
   max_i = std::min(static_cast<int>(size_x), max_i);
   max_j = std::min(static_cast<int>(size_y), max_j);
   
-  int center_x = (max_i - min_i)/2 + min_i;
-  int center_y = (max_j - min_j)/2 + min_j;
-  double radius = (max_i - min_i)/3;
-  for (int j = min_j; j < max_j; j++) {
-    // Reset gradient_index each time when reaching the end of re-calculated window
-    // by OY axis.
-    for (int i = min_i; i < max_i; i++) {
-      //factor 0-1 and based on distance, else 0
-      int dx = (i-center_x);
-      int dy = (j-center_y);
-      double distance = sqrt(dx*dx + dy*dy);
+  nav2_costmap_2d::Costmap2D * costmap = layered_costmap_->getCostmap();
+  double res = costmap->getResolution(); //size of a pixel basically
+  if (!agents_.poses.empty()) //agent message has been passed
+  {
+    double agent_x = agents_.poses[0].position.x;
+    double agent_y = agents_.poses[0].position.y;
+    int map_x, map_y;
+    double radius_ = 1.5;
+    double amplitude_ = 150.0;
+    double ox = agent_x - radius_, oy = agent_y - radius_;
+    costmap->worldToMapNoBounds(ox, oy, map_x, map_y); //gets pixel location of xy pos methinks 
 
-      int index = master_grid.getIndex(i, j);
+    unsigned int width = std::max(1,static_cast<int>((2*radius_) / res)); 
+    unsigned int height = std::max(1,static_cast<int>((2*radius_) / res)); 
+
+    
+    int start_x = 0, start_y = 0, end_x = width, end_y = height; 
+    if (map_x < 0)
+      start_x = -map_x;
+    else if (map_x + width > costmap->getSizeInCellsX())
+      end_x = std::max(0, static_cast<int>(costmap->getSizeInCellsX()) - map_x);
+    if (static_cast<int>(start_x + map_x) < min_i)
+      start_x = min_i - map_x;
+    if (static_cast<int>(end_x + map_x) > max_i)
+      end_x = max_i - map_x;  
+    if (map_y < 0)
+      start_y = -map_y;
+    else if (map_y + height > costmap->getSizeInCellsY())
+      end_y = std::max(0, static_cast<int>(costmap->getSizeInCellsY()) - map_y);
+    if (static_cast<int>(start_y + map_y) < min_j)
+      start_y = min_j - map_y;
+    if (static_cast<int>(end_y + map_y) > max_j)
+      end_y = max_j - map_y;
+
+    double bx = ox + res / 2,
+           by = oy + res / 2; //i think taking center of origin pixel. so back to real units
+
+    double var = radius_;
+    
+
+    
+    for (int i = start_x; i < end_x; i++)
+    {
+      for (int j = start_y; j < end_y; j++)
+      {
+        unsigned char old_cost = costmap->getCost(i + map_x, j + map_y);
+        if (old_cost == nav2_costmap_2d::NO_INFORMATION)
+          continue;
+ 
+        double x = bx + i * res, y = by + j * res;
+        double val;
+        val = Gaussian2D(x, y, agent_x, agent_y, amplitude_, var, var);
+        double rad = sqrt(-2*var*log(val/amplitude_));
+
+        if (rad > radius_)
+          continue;
+        unsigned char cvalue = (unsigned char) val;
+        costmap->setCost(i + map_x, j + map_y, std::max(cvalue, old_cost));
+      }
+    }
+    
+  }
+  else{
+  
+    int center_x = (max_i - min_i)/2 + min_i;
+    int center_y = (max_j - min_j)/2 + min_j;
+    double radius = (max_i - min_i)/3;
+    for (int j = min_j; j < max_j; j++) {
+      // Reset gradient_index each time when reaching the end of re-calculated window
+      // by OY axis.
+      for (int i = min_i; i < max_i; i++) {
+        //factor 0-1 and based on distance, else 0
+        int dx = (i-center_x);
+        int dy = (j-center_y);
+        double distance = sqrt(dx*dx + dy*dy);
+
+        int index = master_grid.getIndex(i, j);
       
-      //unsigned char cost = (LETHAL_OBSTACLE - gradient_index*GRADIENT_FACTOR)%255;
-      unsigned char cost = 0;
-      if (distance < radius)
-      {
-        int factor = (LETHAL_OBSTACLE*(1-distance/radius));
-        cost = factor%255;
+        //unsigned char cost = (LETHAL_OBSTACLE - gradient_index*GRADIENT_FACTOR)%255;
+        unsigned char cost = 0;
+        if (distance < radius)
+        {
+          int factor = (LETHAL_OBSTACLE*(1-distance/radius));
+          cost = factor%255;
+        }
+        else 
+        {
+          cost = 0;
+        }
+        master_array[index] = cost;
       }
-      else 
-      {
-        cost = 0;
+    }
+  
+    for (int j = min_j; j < max_j; j++) {
+      for (int i = min_i; i < max_i; i++) {
+        //factor 0-1 and based on distance, else 0
+        int dx = (i-center_x);
+        int dy = (j-center_y);
+        double distance = sqrt(dx*dx + dy*dy);
+
+        int index = master_grid.getIndex(i, j);
+      
+        unsigned char cost = 0;
+        if (!agents_.poses.empty())
+        {
+          int factor = (LETHAL_OBSTACLE*(1-distance/radius));
+          cost = factor%255;
+          cost = 150;
+        }
+        else 
+        {
+          cost = 40;
+        }
+        master_array[index] = cost;
       }
-      master_array[index] = cost;
     }
   }
-  
-  for (int j = min_j; j < max_j; j++) {
-    for (int i = min_i; i < max_i; i++) {
-      //factor 0-1 and based on distance, else 0
-      int dx = (i-center_x);
-      int dy = (j-center_y);
-      double distance = sqrt(dx*dx + dy*dy);
-
-      int index = master_grid.getIndex(i, j);
-      
-      unsigned char cost = 0;
-      if (!agents_.poses.empty())
-      {
-        int factor = (LETHAL_OBSTACLE*(1-distance/radius));
-        cost = factor%255;
-        cost = 150;
-      }
-      else 
-      {
-        cost = 40;
-      }
-      master_array[index] = cost;
-    }
   }
-  
-}
 
 } // namespace cohan_layers
 #include "pluginlib/class_list_macros.hpp"

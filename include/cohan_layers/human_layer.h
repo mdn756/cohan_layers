@@ -44,6 +44,20 @@ protected:
     geometry_msgs::msg::Pose pose;
     geometry_msgs::msg::Twist velocity;
   };
+  
+  double Guassian1D(double x, double x0, double A, double varx){
+    double dx = x-x0;
+    return A*exp(-pow(dx,2.0)/(2.0*varx));
+  }
+
+  double Gaussian2D(double x, double y, double x0, double y0, double A, double varx, double vary)
+  {
+    double dx = x - x0, dy = y - y0;
+    double d = sqrt(dx * dx + dy * dy);
+    double theta = atan2(dy, dx);
+    double X = d*cos(theta), Y = d*sin(theta);
+    return A/std::max(d,1.0) * Guassian1D(X,0.0,1.0,varx) * Guassian1D(Y,0.0,1.0,vary);
+  }
 
   std::vector<AgentPoseVel> transformed_agents_;
 
