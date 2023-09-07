@@ -207,7 +207,7 @@ void HumanLayer::updateCosts(
   }
   else{
   
-    int center_x = (max_i - min_i)/2 + min_i;
+    /*int center_x = (max_i - min_i)/2 + min_i;
     int center_y = (max_j - min_j)/2 + min_j;
     double radius = (max_i - min_i)/3;
     for (int j = min_j; j < max_j; j++) {
@@ -258,7 +258,7 @@ void HumanLayer::updateCosts(
         }
         master_array[index] = cost;
       }
-    }
+    }*/
   }
   }
 
