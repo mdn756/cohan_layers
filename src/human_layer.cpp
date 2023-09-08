@@ -131,16 +131,24 @@ void HumanLayer::updateCosts(
   {
     double agent_x = agents_.poses[0].position.x;
     double agent_y = agents_.poses[0].position.y;
+    double agent_vel_x = agents_.twists[0].linear.x;
+    double agent_vel_y = agents_.twists[0].linear.y;
     int map_x, map_y;
     double radius_ = 1.5;
-    double amplitude_ = 150.0;
-    double ox = agent_x - radius_, oy = agent_y - radius_;
-    costmap->worldToMapNoBounds(ox, oy, map_x, map_y); //gets pixel location of xy pos methinks 
+    double amplitude_ = 240.0;
 
-    unsigned int width = std::max(1,static_cast<int>((2*radius_) / res)); 
-    unsigned int height = std::max(1,static_cast<int>((2*radius_) / res)); 
-
+    double var = radius_;  
+    double skew_factor = 1;  
+    double var_x = var + skew_factor * agent_vel_x;
+    double var_y = var + skew_factor * agent_vel_y;
+    double skew_ang = atan2(agent_vel_y, agent_vel_x);
     
+    double ox = agent_x - var_x, oy = agent_y - var_y;
+    costmap->worldToMapNoBounds(ox, oy, map_x, map_y); //gets pixel location of xy pos methinks 
+    
+    unsigned int width = std::max(1,static_cast<int>((2*var_x) / res)); 
+    unsigned int height = std::max(1,static_cast<int>((2*var_y) / res)); 
+
     int start_x = 0, start_y = 0, end_x = width, end_y = height; 
     if (map_x < 0)
       start_x = -map_x;
@@ -161,10 +169,6 @@ void HumanLayer::updateCosts(
 
     double bx = ox + res / 2,
            by = oy + res / 2; //i think taking center of origin pixel. so back to real units
-
-    double var = radius_;
-    
-
     
     for (int i = start_x; i < end_x; i++)
     {
@@ -176,7 +180,7 @@ void HumanLayer::updateCosts(
  
         double x = bx + i * res, y = by + j * res;
         double val;
-        val = Gaussian2D(x, y, agent_x, agent_y, amplitude_, var, var);
+        val = Gaussian2D_skewed(x, y, agent_x, agent_y, amplitude_, var_x, var_y, skew_ang);
         double rad = sqrt(-2*var*log(val/amplitude_));
 
         if (rad > radius_)

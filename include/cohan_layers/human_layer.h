@@ -49,7 +49,7 @@ protected:
   
   double Guassian1D(double x, double x0, double A, double varx){
     double dx = x-x0;
-    return A*exp(-pow(dx,2.0)/(2.0*varx));
+    return A*exp(-pow(dx,2.0)/(2.0*pow(varx,2)));
   }
 
   double Gaussian2D(double x, double y, double x0, double y0, double A, double varx, double vary)
