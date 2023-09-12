@@ -69,7 +69,25 @@ protected:
     double X = d*cos(theta-skew_ang), Y = d*sin(theta-skew_ang);
     return A/std::max(d,1.0) * Guassian1D(X,0.0,1.0,varx) * Guassian1D(Y,0.0,1.0,vary);
   } 
+ 
+  double getAngle(double x, double y, double x0, double y0, double vel_x, double vel_y){
+    double dx = x-x0;
+    double dy = y-y0;
+    double theta_pix = atan2(dy,dx);
+    double theta_vel = atan2(vel_y, vel_x);
+    double angle = std::abs(theta_pix-theta_vel);
+    return angle;
+  }
   
+  double getEllipseRad(double x, double y, double x0, double y0, double vel_x, double vel_y, double a, double skew_factor)
+  {
+    double dx = x - x0, dy = y - y0;
+    double b = std::sqrt(vel_x*vel_x + vel_y*vel_y) * skew_factor + a; //a and b are the axes of the ellipse.
+    //assume ellipse is aligned with axes, then shift with the velocity vector angle
+    double theta = getAngle(x, y, x0, y0, vel_y, -vel_x);
+    double radius = a*b/std::sqrt(a*a*sin(theta)*sin(theta)+b*b*cos(theta)*cos(theta)); //radius at theta
+    return radius;
+  }  
   std::vector<AgentPoseVel> transformed_agents_;
 
   bool first_time_, /*reset,*/ shutdown_;

@@ -169,7 +169,7 @@ void HumanLayer::updateCosts(
 
     double bx = ox + res / 2,
            by = oy + res / 2; //i think taking center of origin pixel. so back to real units
-    
+
     for (int i = start_x; i < end_x; i++)
     {
       for (int j = start_y; j < end_y; j++)
@@ -181,12 +181,29 @@ void HumanLayer::updateCosts(
         double x = bx + i * res, y = by + j * res;
         double val;
         val = Gaussian2D_skewed(x, y, agent_x, agent_y, amplitude_, var_x, var_y, skew_ang);
-        double rad = sqrt(-2*var*log(val/amplitude_));
+        double static_val = Gaussian2D(x, y, agent_x, agent_y, amplitude_, radius_, radius_);
+        double dynamic_rad = getEllipseRad(x,y, agent_x, agent_y, agent_vel_x, agent_vel_y, radius_, skew_factor);
+        double static_rad = sqrt(-2*var*log(static_val/amplitude_));
+        double angle = getAngle(x,y,agent_x,agent_y,agent_vel_x,agent_vel_y);
+        double rad = std::sqrt((x-agent_x)*(x-agent_x) + (y-agent_y)*(y-agent_y));        
 
-        if (rad > radius_)
-          continue;
-        unsigned char cvalue = (unsigned char) val;
-        costmap->setCost(i + map_x, j + map_y, std::max(cvalue, old_cost));
+
+        if (std::abs(angle) < 1.57078){//in direction of vel vector
+          unsigned char cvalue = (unsigned char) val;
+          if (rad > dynamic_rad)
+            continue;
+          else{
+            costmap->setCost(i + map_x, j + map_y, std::max(cvalue, old_cost));
+          }
+        }
+        else{
+          unsigned char cvalue = (unsigned char) static_val;
+          if (rad > radius_) 
+            continue;
+          else{
+            costmap->setCost(i + map_x, j + map_y, std::max(cvalue, old_cost)); 
+          }
+        }
       }
     }
     
