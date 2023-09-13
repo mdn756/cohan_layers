@@ -81,7 +81,6 @@ protected:
   
   double getEllipseRad(double x, double y, double x0, double y0, double vel_x, double vel_y, double a, double skew_factor)
   {
-    double dx = x - x0, dy = y - y0;
     double b = std::sqrt(vel_x*vel_x + vel_y*vel_y) * skew_factor + a; //a and b are the axes of the ellipse.
     //assume ellipse is aligned with axes, then shift with the velocity vector angle
     double theta = getAngle(x, y, x0, y0, vel_y, -vel_x);

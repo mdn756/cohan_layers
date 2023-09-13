@@ -112,7 +112,6 @@ void HumanLayer::updateCosts(
   // - updateWithTrueOverwrite()
   // In this case using master_array pointer is equal to modifying local costmap_
   // pointer and then calling updateWithTrueOverwrite():
-  unsigned char * master_array = master_grid.getCharMap();
   unsigned int size_x = master_grid.getSizeInCellsX(), size_y = master_grid.getSizeInCellsY();
 
   // {min_i, min_j} - {max_i, max_j} - are update-window coordinates.
@@ -134,7 +133,7 @@ void HumanLayer::updateCosts(
     double agent_vel_x = agents_.twists[0].linear.x;
     double agent_vel_y = agents_.twists[0].linear.y;
     int map_x, map_y;
-    double radius_ = 1.5;
+    double radius_ = 1.0;
     double amplitude_ = 240.0;
 
     double var = radius_;  
@@ -179,17 +178,13 @@ void HumanLayer::updateCosts(
           continue;
  
         double x = bx + i * res, y = by + j * res;
-        double val;
-        val = Gaussian2D_skewed(x, y, agent_x, agent_y, amplitude_, var_x, var_y, skew_ang);
-        double static_val = Gaussian2D(x, y, agent_x, agent_y, amplitude_, radius_, radius_);
-        double dynamic_rad = getEllipseRad(x,y, agent_x, agent_y, agent_vel_x, agent_vel_y, radius_, skew_factor);
-        double static_rad = sqrt(-2*var*log(static_val/amplitude_));
         double angle = getAngle(x,y,agent_x,agent_y,agent_vel_x,agent_vel_y);
         double rad = std::sqrt((x-agent_x)*(x-agent_x) + (y-agent_y)*(y-agent_y));        
 
-
-        if (std::abs(angle) < 1.57078){//in direction of vel vector
-          unsigned char cvalue = (unsigned char) val;
+        if (std::abs(angle) < 1.57078){  //in direction of vel vector
+          double dynamic_val = Gaussian2D_skewed(x, y, agent_x, agent_y, amplitude_, var_x, var_y, skew_ang);
+          double dynamic_rad = getEllipseRad(x,y, agent_x, agent_y, agent_vel_x, agent_vel_y, radius_, skew_factor);
+          unsigned char cvalue = (unsigned char) dynamic_val;
           if (rad > dynamic_rad)
             continue;
           else{
@@ -197,6 +192,7 @@ void HumanLayer::updateCosts(
           }
         }
         else{
+          double static_val = Gaussian2D(x, y, agent_x, agent_y, amplitude_, radius_, radius_);
           unsigned char cvalue = (unsigned char) static_val;
           if (rad > radius_) 
             continue;
